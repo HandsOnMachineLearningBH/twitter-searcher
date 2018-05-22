@@ -1,5 +1,5 @@
 {
-  "name": "twitter-crawler",
+  "name": "twitter-searcher",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "google-spreadsheet": "^2.0.4",
     "twitter": "^1.7.1"
   }
 }
