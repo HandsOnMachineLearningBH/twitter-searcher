@@ -1,37 +1,38 @@
-var Twitter = require('twitter');
+const Twitter = require('twitter');
+const GoogleSave = require('./google.js');
 
-var client = new Twitter({
+const client = new Twitter({
   consumer_key: process.env.TWITTER_CONSUMER_KEY,
   consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
   access_token_key: process.env.TWITTER_ACCESS_TOKEN_KEY,
   access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
 });
 
+const defaultParams = {
+  result_type: 'recent',
+  include_entities: true,
+  lang: 'pt',
+  count: 100,
+  tweet_mode: 'extended'
+}
 
-async function searchByTweets(term, numberOfResults, results = [], params={include_entities: true, lang: 'pt', count: 10}) {
+async function searchByTweets(term, numberOfResults, results=[], params=defaultParams) {
   if (numberOfResults > 0) {
-
     params.q = term;
     const tweets = await client.get('search/tweets', params);
+    const statuses = tweets.statuses;
+    const metadata = tweets.search_metadata;
 
-    if (tweets) {
-      const statuses = tweets.statuses;
-      const metadata = tweets.search_metadata;
-
-      if (metadata.count > 0) {
-        for(let tweet of tweets.statuses) {
-          const rowData = buildRowData(tweet);
-          results.push(rowData);
-        }
-
-        numberOfResults -= statuses.length;
-        params.max_id = metadata.max_id;
-
-        return await searchByTweets(term, numberOfResults, results, params);
-      } else {
-        return results;
-      }
+    for(let tweet of statuses) {
+      if(numberOfResults <= 0) break;
+      const rowData = buildRowData(tweet);
+      results.push(rowData);
+      numberOfResults--;
     }
+
+    params.max_id = metadata.max_id;
+
+    return await searchByTweets(term, numberOfResults, results, params);
   } else {
     return results;
   }
@@ -39,7 +40,8 @@ async function searchByTweets(term, numberOfResults, results = [], params={inclu
 
 function buildRowData(tweet) {
   let rowData = {};
-  rowData.text = tweet.text;
+
+  rowData.text = tweet.full_text;
   rowData.truncated = tweet.truncated;
   rowData.retweetCount = tweet.retweet_count;
   rowData.favoriteCount = tweet.favorite_count;
@@ -64,10 +66,10 @@ function buildRowData(tweet) {
 
 async function getTweets(term, maxResults) {
   const results = await searchByTweets(term, maxResults);
-  console.log("final result", results);
-
+  GoogleSave.saveOnGoogle(results);
 }
 
+const SEARCH_TERM = 'LATAM_BRA';
+const TWEETS_QUANTITY = 3000;
 
-
-getTweets('Latam', 20);
+getTweets(SEARCH_TERM, TWEETS_QUANTITY);
